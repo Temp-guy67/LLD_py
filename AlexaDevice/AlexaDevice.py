@@ -1,117 +1,142 @@
-# import sys
-# sys.stdin = open("ip.txt","r")
-# sys.stdout = open("op.txt","w")
+from abc import ABC, abstractmethod
+from typing import Optional
 
 
-from abc import ABC, abstractmethod 
-
-class BatteryFeatures(ABC):
-    @abstractmethod 
-    def show_battery_percentage():
-        pass 
-
-class ChargingActions(ABC):
-    @abstractmethod 
-    def is_charging():
+# ========== INTERFACES ==========
+class BatteryPowered(ABC):
+    @abstractmethod
+    def battery_percentage(self) -> float:
         pass
 
-    @abstractmethod 
-    def switch_on_charging():
-        pass 
 
-    @abstractmethod 
-    def switch_off_charging():
+class Chargable(ABC):
+    @abstractmethod
+    def is_charging(self) -> bool:
         pass
 
-class AudioFeatures(ABC):
-    @abstractmethod 
-    def play_audio():
-        pass 
-
-
-class ScreeFeatures(ABC):
-    @abstractmethod 
-    def display():
-        pass 
-
-
-class BatteriedDevice(BatteryFeatures):
-    __current_charge = -1
-    def __init__(self, current_charge : float):
-        self.__current_charge = current_charge
-
-    def show_battery_percentage(self) -> float:
-        return self.__current_charge
-        
-
-
-class NonBatteriedDevice(BatteryFeatures):
-    def __init__(self):
+    @abstractmethod
+    def start_charging(self):
         pass
 
-    def show_battery_percentage(self) -> float:
-        return -1
-    
+    @abstractmethod
+    def stop_charging(self):
+        pass
 
-    
-class AlexaDevice(ChargingActions):
-    __batter_functions = None 
-    __charging_status = False 
 
-    def __init__(self, batteryFeatures : BatteryFeatures):
-        self.__batter_functions = batteryFeatures 
+class Displayable(ABC):
+    @abstractmethod
+    def display(self):
+        pass
 
-    def is_charging(self):
-        return self.__charging_status
 
-    def switch_on_charging(self):
-        self.__charging_status = True 
+class Playable(ABC):
+    @abstractmethod
+    def play_audio(self):
+        pass
 
-    def switch_off_charging(self):
-        self.__charging_status = False 
 
-    def display_battery_status(self):
-        battery_per = self.__batter_functions.show_battery_percentage()
-        if battery_per > -1:
-            print("{}% ".format(battery_per))
+# ========== COMPONENTS ==========
+class BatteryModule(BatteryPowered, Chargable):
+    def __init__(self, initial_charge: float = 100.0):
+        self._charge = initial_charge
+        self._is_charging = False
+
+    def battery_percentage(self) -> float:
+        return self._charge
+
+    def is_charging(self) -> bool:
+        return self._is_charging
+
+    def start_charging(self):
+        self._is_charging = True
+
+    def stop_charging(self):
+        self._is_charging = False
+
+
+class NoBatteryModule(BatteryPowered, Chargable):
+    def battery_percentage(self) -> float:
+        return -1.0
+
+    def is_charging(self) -> bool:
+        return False
+
+    def start_charging(self):
+        pass
+
+    def stop_charging(self):
+        pass
+
+
+# ========== DEVICE BASE CLASS ==========
+class AlexaDevice:
+    def __init__(
+        self,
+        battery_module: Optional[BatteryPowered] = None,
+    ):
+        self.battery_module = battery_module
+
+    def show_status(self):
+        if self.battery_module:
+            charge = self.battery_module.battery_percentage()
+            charging = self.battery_module.is_charging() # type: ignore
+
+            if charging:
+                if charge > 0:
+                    print("Charging... {:.2f}%".format(charge))
+                else:
+                    print("Charging... Battery not available")
+            else:
+                if charge > 0:
+                    print("Battery: {:.2f}%".format(charge))
+                else:
+                    print("Battery not available")
         else:
-            print("No Battery Availeable")
-
-        
-    
-class AudioAlexa(AlexaDevice, AudioFeatures):
-    def __init__(self, batteryFeatures : BatteryFeatures):
-        super(self, batteryFeatures)
-
-    def play_audio():
-        print("Playing Audio")
-
-class ScreenAlexa(AlexaDevice, ScreeFeatures):
-    def __init__(self, batteryFeatures : BatteryFeatures):
-        super(batteryFeatures)
-
-    def display():
-        print("Showing screen")
+            print("Battery not available")
 
 
-class AudioScreenAlexa(AlexaDevice, AudioFeatures, ScreeFeatures):
-    def __init__(self, batteryFeatures : BatteryFeatures):
-        super(batteryFeatures)
-
-    def play_audio():
-        print("Playing Audio")
-
-    def display():
-        print("Showing screen")
+class AudioAlexa(AlexaDevice, Playable):
+    def play_audio(self):
+        print("🔊 Playing audio...")
 
 
+class ScreenAlexa(AlexaDevice, Displayable):
+    def display(self):
+        print("🖥️ Showing screen...")
 
 
+class HybridAlexa(AlexaDevice, Playable, Displayable):
+    def play_audio(self):
+        print("🔊 Playing audio...")
+
+    def display(self):
+        print("🖥️ Showing screen...")
+
+
+# ========== MAIN ==========
 if __name__ == "__main__":
-    batteriedDevice = BatteriedDevice(76)
-    audioScreenDevice = AudioScreenAlexa(batteriedDevice)
-    audioScreenDevice.display_battery_status()
-    audioScreenDevice.play_audio()
+    # Create battery and non-battery modules
+    battery = BatteryModule(76)
+    no_battery = NoBatteryModule()
 
+    # Devices with different features
+    device1 = AudioAlexa(battery_module=battery)
+    device2 = ScreenAlexa(battery_module=no_battery)
+    device3 = HybridAlexa(battery_module=battery)
 
-    
+    # Simulate actions
+    battery.start_charging()
+    device1.show_status()  # Charging + battery
+    battery.stop_charging()
+    device1.play_audio()
+
+    print()
+
+    device2.show_status()  # No battery
+    device2.display()
+
+    print()
+
+    device3.show_status()  # Battery only
+    device3.display()
+    device3.play_audio()
