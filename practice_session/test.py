@@ -1,15 +1,28 @@
-import time
+from threading import Lock
 
-# Usage
-current_timestamp = time.time()
-print(current_timestamp)
+class ThreadSafeSingleton:
+    _instance = None
+    _lock = Lock()
+    _initialized = False  # Custom flag to simulate private constructor
 
-import datetime
+    def __new__(cls, *args, **kwargs):
+        print("Getting called1 ")
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super().__new__(cls)
+            return cls._instance
 
-# Usage
-now = datetime.datetime.now()
-time.sleep(10)
-now2 = datetime.datetime.now()
-x = now2-now
+    def __init__(self):
+        
+        if not getattr(self, '_initialized', False):
+            # Only run initialization once
+            self.value = 42
+            self._initialized = True
+            print("Getting called")
 
-print(x.total_seconds())
+        
+
+
+obj = ThreadSafeSingleton()
+obj2 = ThreadSafeSingleton()
+print(obj ==obj2)

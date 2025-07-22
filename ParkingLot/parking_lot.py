@@ -98,6 +98,7 @@ class CompactSpot(ParkingSpot):
         self.__vehicle = None 
         self.__if_available = True
         print("Spot - {} | Parked by {} ".format(self.__spot_number,self.__vehicle))
+        return True
 
 
 class MediumSpot(ParkingSpot):
@@ -123,13 +124,16 @@ class MediumSpot(ParkingSpot):
         if self.is_available():
             self.__vehicle = vehicle
             self.__if_available = False
+            return True
         else :
             print("Spot - {} | Not Available".format(self.__spot_number))
+            return False
 
     def un_park_vehicle(self):
         self.__vehicle = None 
         self.__if_available = True
         print("Spot - {} | Parked by {} ".format(self.__spot_number,self.__vehicle))
+        return False
 
 
 class ParkingLotManager():
@@ -153,10 +157,14 @@ class ParkingLotManager():
 
     def park_vehicle(self, vehicle):
         parking_spot = self.find_spot(vehicle.get_vehicle_size())
-        parking_spot.park_vehicle(vehicle)
-
+        if parking_spot.park_vehicle(vehicle) :  # type: ignore
+            self.__map2spot[vehicle.get_license_no()] = parking_spot
 
     def un_park_vehicle(self, vehicle):
+        parking_spot = self.__map2spot[vehicle.get_license_no()]
+        if parking_spot :
+            parking_spot.un_park_vehicle()
 
 
-        parking_spot.un_park_vehicle()
+
+

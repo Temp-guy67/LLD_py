@@ -3,7 +3,7 @@ from typing import Optional
 
 
 # ========== INTERFACES ==========
-class BatteryPowered(ABC):
+class BatteryDetails(ABC):
     @abstractmethod
     def battery_percentage(self) -> float:
         pass
@@ -36,7 +36,7 @@ class Playable(ABC):
 
 
 # ========== COMPONENTS ==========
-class BatteryModule(BatteryPowered, Chargable):
+class BatteryModule(BatteryDetails):
     def __init__(self, initial_charge: float = 100.0):
         self._charge = initial_charge
         self._is_charging = False
@@ -44,55 +44,52 @@ class BatteryModule(BatteryPowered, Chargable):
     def battery_percentage(self) -> float:
         return self._charge
 
-    def is_charging(self) -> bool:
-        return self._is_charging
 
-    def start_charging(self):
-        self._is_charging = True
+class NoBatteryModule(BatteryDetails):
+    def __init__(self):
+        pass 
 
-    def stop_charging(self):
-        self._is_charging = False
-
-
-class NoBatteryModule(BatteryPowered, Chargable):
     def battery_percentage(self) -> float:
         return -1.0
 
-    def is_charging(self) -> bool:
-        return False
-
-    def start_charging(self):
-        pass
-
-    def stop_charging(self):
-        pass
-
 
 # ========== DEVICE BASE CLASS ==========
-class AlexaDevice:
+class AlexaDevice(Chargable):
     def __init__(
         self,
-        battery_module: Optional[BatteryPowered] = None,
+        battery_module: BatteryDetails,
     ):
         self.battery_module = battery_module
+        self.__is_charging = False
+
+    def is_charging(self) -> bool:
+        return self.__is_charging
+
+
+    def start_charging(self):
+        self.__is_charging = True
+
+
+    def stop_charging(self):
+        self.__is_charging = False
 
     def show_status(self):
+        charge = -1
+        charging = False
+
         if self.battery_module:
             charge = self.battery_module.battery_percentage()
-            charging = self.battery_module.is_charging() # type: ignore
-
-            if charging:
-                if charge > 0:
-                    print("Charging... {:.2f}%".format(charge))
-                else:
-                    print("Charging... Battery not available")
+        
+        if charging:
+            if charge > 0:
+                print("Charging... {:.2f}%".format(charge))
             else:
-                if charge > 0:
-                    print("Battery: {:.2f}%".format(charge))
-                else:
-                    print("Battery not available")
+                print("Charging... Battery not available")
         else:
-            print("Battery not available")
+            if charge > 0:
+                print("Battery: {:.2f}%".format(charge))
+            else:
+                print("Battery not available")
 
 
 class AudioAlexa(AlexaDevice, Playable):
@@ -125,9 +122,9 @@ if __name__ == "__main__":
     device3 = HybridAlexa(battery_module=battery)
 
     # Simulate actions
-    battery.start_charging()
+    device1.start_charging()
     device1.show_status()  # Charging + battery
-    battery.stop_charging()
+    device1.stop_charging()
     device1.play_audio()
 
     print()

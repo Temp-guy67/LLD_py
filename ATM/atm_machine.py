@@ -1,34 +1,29 @@
-'''
+from threading import Lock
 
-Bank -> ATM 
+from LLD_py.ATM.amtstatefactory import ATMMachineStatesFactory
 
-USER:
-a. Customer (us)
-    1. put atm card in (~ put pin and atm card number ) - Authentication stage
-    2. query balance 
-    3. deposit amount 
-    4. withdraw amount (if any)
+class ATMManager:
+    
+    __ATM_INSTANCE = None
+    __lock = Lock()
+    __initialised = False
+    __cur_state =  
 
 
-b. ATM Operater.
-    0. init ATM()
-    1. can add cash, with denomination 
-    2. retrieve cash 
-    3. retrive checq [*]
-    4. check log[*]
+    def __new__(cls, *args, **kargs):
+        with cls.__lock:
+            if cls.__ATM_INSTANCE is None :
+                cls.__ATM_INSTANCE = super().__new__(cls)
 
-'''
-from bank import Bank
+        return cls.__ATM_INSTANCE
 
-class ATM:
-    IS_INIT = False 
-    BANK_OBJ = Bank()
+
     def __init__(self):
-        self.machin_id = "1234"
-        self.machine_location = "abc road"
+        if not self.__initialised:
+            self.__initialised = True 
+
         
+    def set_state(self, state:ATMMachineStatesFactory):
+        self.__cur_state = state 
 
-    def put_atm_card(self, atm_card_id, pin):
-        atm_card_details = self.BANK_OBJ.get_account_details(atm_card_id)
-        print(type(atm_card_details))
-
+        
